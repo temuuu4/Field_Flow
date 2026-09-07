@@ -1,40 +1,234 @@
-# FieldFlow deployment
+# FieldFlow
 
-FieldFlow is a React single-page application backed by Express and MongoDB.
+FieldFlow is a full-stack field-operations web application built with **React, Express, and MongoDB**.
 
-## Local verification
+It is designed to help organizations manage field assignments, collection locations, routes, drivers, sample collection, GPS tracking, and operational notifications through one centralized platform.
 
-Install each locked dependency set and build the frontend:
+## Project Overview
 
-```powershell
+FieldFlow supports three main roles:
+
+* **IT Admin** — system and user administration
+* **Operator** — assignment, route, collection-location, and operational management
+* **Driver** — field assignments, navigation, GPS tracking, barcode scanning, and sample collection
+
+The system is being developed with a strong focus on **security, reliability, user experience, and professional deployment readiness**.
+
+## Current Progress
+
+### ✅ Completed
+
+**Authentication & Security**
+
+* Secure registration and login
+* Cookie-based authentication
+* Role-based authorization
+* CSRF protection
+* CORS configuration
+* Security headers
+* Server-side ownership and permission checks
+* Secure password handling
+
+**Assignment Management**
+
+* Assignment creation
+* Driver assignment
+* Assignment status management
+* Driver accept/decline workflow
+* Decline reasons
+* Collection locations
+* Assignment purpose
+* Date and time scheduling
+* Newest assignments displayed first
+
+**Journey & Operations**
+
+* Driver journeys
+* Ordered collection stops
+* Active-stop management
+* Journey start and completion
+* Server-side state validation
+* Driver location and journey tracking
+
+**Maps & GPS**
+
+* Leaflet / React Leaflet maps
+* OpenStreetMap map data
+* Live browser GPS
+* Driver presence tracking
+* GPS history
+* OSRM road-routing integration
+* Route distance and ETA
+* Live driver position
+
+**Barcode & Samples**
+
+* Barcode scanning
+* Barcode validation
+* Sample creation
+* Sample submission
+* Assignment/stop relationships
+* Duplicate barcode protection
+
+**Notifications**
+
+* In-app notifications
+* Web Push infrastructure
+* Browser/service-worker notifications
+* Assignment-related notifications
+
+**Recurring Work**
+
+* Recurring schedules
+* Automatic recurring assignment generation
+* Safe recurring occurrence handling
+
+**Development**
+
+* HTTPS development environment
+* Production-oriented environment configuration
+* Frontend production build
+* Backend validation
+
+## 🚧 Current Development
+
+The main remaining work is completing and polishing the **Driver field workflow**.
+
+The target Driver experience is:
+
+```text id="f4xozh"
+Assigned Work
+     ↓
+Accept / Decline
+     ↓
+Start Journey
+     ↓
+Live GPS
+     ↓
+Real Road Navigation
+     ↓
+Arrive at Collection Location
+     ↓
+Scan Barcode
+     ↓
+Submit Sample
+     ↓
+Complete Stop
+     ↓
+Navigate to Next Stop
+     ↓
+Complete Journey
+```
+
+Current work is focused on making these steps operate as one continuous workflow rather than separate screens.
+
+Additional work includes:
+
+* improving GPS and navigation behavior
+* improving arrival handling
+* improving offline/network recovery
+* refining responsive layouts
+* improving assignment creation UX
+* final notification verification
+* production routing configuration
+* final end-to-end testing
+
+## Product Requirements
+
+### Notifications
+
+Important notifications should be available inside FieldFlow and, when supported and permitted, delivered through browser/OS push notifications so users can receive important updates even when the application is not the active browser tab.
+
+### User Experience
+
+The application should always clearly communicate:
+
+* what is happening
+* whether an action succeeded
+* whether something failed
+* what the user should do next
+* whether the device is offline or synchronizing
+
+The goal is to minimize unnecessary navigation, repeated actions, and user confusion.
+
+### Professional Design
+
+FieldFlow is intended to provide a consistent and professional experience across:
+
+* Desktop
+* Laptop
+* Tablet
+* Mobile
+
+The interface is being refined to ensure consistent layouts, accessible controls, responsive forms, clear feedback, and practical field use.
+
+## Development
+
+Install frontend dependencies:
+
+```bash
 npm ci
+```
+
+Build the frontend:
+
+```bash
 npm run build
+```
+
+Install backend dependencies:
+
+```bash
 npm --prefix server ci
+```
+
+Validate the backend:
+
+```bash
 npm --prefix server run validate
 ```
 
-Copy `server/.env.example` to a private deployment environment (or inject the
-same variables through the platform). Do not commit `.env`, VAPID private keys,
-JWT secrets, or development certificates.
+Local development uses HTTPS:
 
-## Production requirements
+```text
+https://localhost:5173
+```
 
-- Serve `dist/` behind HTTPS with an SPA fallback to `index.html`.
-- Route `/api` and `/health` to the backend, or set `VITE_API_BASE_URL` to the
-  explicit HTTPS API origin and add the frontend origin to `CORS_ORIGIN`.
-- Use HTTPS for local development (`https://localhost:5173`), keep `AUTH_COOKIE_SECURE=true`
-  when the browser is served over TLS, and never downgrade geolocation/camera/push
-  requirements for convenience. The app remains compatible with a reverse proxy or
-  platform-managed TLS termination in production.
-- Set `NODE_ENV=production`, `AUTH_COOKIE_SECURE=true`, a 32+ character random
-  `JWT_SECRET`, MongoDB Atlas `MONGODB_URI`, an explicit `CORS_ORIGIN`, and
-  VAPID public/private keys. Configure `TRUST_PROXY` only for known proxy hops.
-- Run at least one backend process continuously. Its built-in recurring
-  scheduler runs at startup and every `RECURRING_SCHEDULER_INTERVAL_SECONDS`
-  (60 by default); unique schedule/occurrence keys make retries safe.
-- Configure MongoDB backups, monitoring, and indexes. The app connects with a
-  10-second server-selection timeout and exposes `/health` for probes.
+The port may change if the default port is already in use, but development HTTPS must be preserved.
 
-Web Push requires HTTPS (or localhost during development), browser permission,
-and an active subscription. It cannot be guaranteed on unsupported browsers,
-when permission is denied, or when the device has no network connection.
+## Environment & Security
+
+Production configuration should provide the required database, authentication, CORS, cookie, and Web Push settings.
+
+Never commit:
+
+```text
+.env
+JWT secrets
+database credentials
+VAPID private keys
+production private keys
+development certificates
+```
+
+Production should use trusted HTTPS/TLS rather than development certificates.
+
+## Production Readiness
+
+FieldFlow is currently in the **final development and integration stage**.
+
+The remaining work is primarily focused on:
+
+* completing the full Driver workflow
+* verifying real road navigation in practice
+* completing arrival and collection flow
+* improving network/offline resilience
+* final notification testing
+* responsive and UX polishing
+* production routing configuration
+* deployment configuration
+* final end-to-end QA
+
+## Goal
+
+The goal is to deliver FieldFlow as a **secure, reliable, professional, and deployable field-operations platform** that connects assignment management, navigation, GPS tracking, barcode-based collection, sample management, and notifications into one coherent workflow.
