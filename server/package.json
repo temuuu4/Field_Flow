@@ -1,0 +1,21 @@
+{
+  "name": "fieldflow-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "validate": "node src/scripts/validate-models.js",
+    "generate:vapid": "node --input-type=module -e \"import webPush from 'web-push'; const keys = webPush.generateVAPIDKeys(); console.log('VAPID_SUBJECT=mailto:admin@example.com\\nVAPID_PUBLIC_KEY=' + keys.publicKey + '\\nVAPID_PRIVATE_KEY=' + keys.privateKey);\""
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.18.0",
+    "web-push": "^3.6.7"
+  }
+}

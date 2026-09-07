@@ -1,0 +1,11 @@
+Name                                                 lat(N)   long(E)
+st.Paul's Hospital Millennium Medical college        9.0158    38.7475
+Tikur Anbessa (Black Lion) Specialized Hospital      9.0558    38.7297
+Yekatit 12 Hospital                                  9.0438    38.7612
+ALERT Comprehensive Specialized Hospital             8.9856    38.7104
+St. Peter’s Specialized Hospital                     9.0715    38.7470
+Zewditu Memorial Hospital                            9.0175    38.7618
+Minilik II Referral Hospital                         9.0345    38.7629
+Tirunesh Beijing General Hospital                    8.8851    38.7844
+Gandhi Memorial Hospital                             9.0135    38.7512
+Ras Desta Damtew General Hospital                    9.0385°   38.7468
