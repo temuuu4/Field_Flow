@@ -33,8 +33,8 @@ export function PasswordInput({
       <div className="auth-input-wrapper">
         <input
           id={`auth-${name}`}
-          // Non-standard `name` so password managers don't pre-fill a
-          // stale value. `autoComplete` is set explicitly to the right
+          // Non-standard `name` prefix so password managers don't pre-fill a
+          // stale value; `autoComplete` is set explicitly to the right
           // semantic so well-behaved managers still discover the field.
           name={name ? `auth-${name}` : name}
           type={visible ? 'text' : 'password'}

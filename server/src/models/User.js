@@ -25,7 +25,7 @@ const userSchema = new Schema(
     failedLoginAttempts: { type: Number, default: 0, min: 0 },
     lockedUntil: { type: Date },
     // Bumped on password change / logout-all to invalidate all previously
-    // issued access and refresh tokens (compared against JWT `tv` claim).
+    // issued access and refresh tokens (compared against the JWT `tv` claim).
     tokenVersion: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
@@ -44,9 +44,6 @@ userSchema.methods.comparePassword = function comparePassword(password) {
 };
 
 userSchema.methods.hashPassword = async function hashPassword(password) {
-  // Bcrypt cost/rounds is sourced from centralized auth configuration so it is
-  // not hard-coded inside the model. `environment.auth.bcryptRounds` is
-  // already validated as a positive number during config initialization.
   this.passwordHash = await bcrypt.hash(password, environment.auth.bcryptRounds);
 };
 

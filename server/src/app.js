@@ -24,19 +24,14 @@ app.disable('x-powered-by');
 app.disable('etag');
 
 // `trust proxy` controls how Express derives `request.ip` and which
-// `X-Forwarded-*` headers it honors. If we never set this, every request
-// looks like it comes from 127.0.0.1 once a reverse proxy is placed in
-// front — silently breaking per-IP rate limiting and audit-log IP
-// attribution. The default (`false`) is safe for development. In
-// production deployments behind a known reverse proxy, set
-// `TRUST_PROXY` (e.g. `TRUST_PROXY=1` or `TRUST_PROXY=loopback`) to a
-// numeric hop count or a known subnet. We parse it conservatively here.
+// `X-Forwarded-*` headers it honors. Without it, every request behind a
+// reverse proxy looks like it came from 127.0.0.1, silently breaking
+// per-IP rate limiting and audit-log IP attribution. Production must
+// set `TRUST_PROXY` to a numeric hop count or a known subnet.
 const trustProxySetting = (process.env.TRUST_PROXY ?? '').trim();
 if (trustProxySetting !== '') {
-  // Allow numeric hop counts ("1", "2") and special values ("loopback",
-  // "linklocal", "uniquelocal"). Anything else falls back to `false` to
-  // avoid an attacker being able to spoof their IP via a header we don't
-  // actually trust.
+  // Numeric hop counts and the named presets are accepted; anything else
+  // is ignored so an attacker cannot spoof their IP via an untrusted header.
   if (/^\d+$/.test(trustProxySetting)) {
     app.set('trust proxy', Number(trustProxySetting));
   } else if (['loopback', 'linklocal', 'uniquelocal'].includes(trustProxySetting)) {
@@ -55,11 +50,11 @@ const allowedOrigins = environment.corsOrigin
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-// In production we explicitly refuse a wildcard CORS_ORIGIN. Browsers already
-// refuse to send credentials with `*`, but a misconfigured `*` value would
-// still allow non-credentialed cross-origin reads of public endpoints and
-// obscure the deployer's intent. Fail fast at startup instead of silently
-// shipping a permissive policy.
+// In production we explicitly refuse a wildcard CORS_ORIGIN. Browsers
+// already refuse to send credentials with `*`, but a misconfigured `*`
+// would still allow non-credentialed cross-origin reads and obscure the
+// deployer's intent. Fail fast at startup instead of shipping a permissive
+// policy silently.
 const hasWildcardOrigin = allowedOrigins.includes('*');
 if (hasWildcardOrigin && environment.nodeEnv === 'production') {
   throw new Error(
@@ -68,8 +63,8 @@ if (hasWildcardOrigin && environment.nodeEnv === 'production') {
   );
 }
 
-// Reject the unsafe `*` + credentials combination by treating `*` as "any origin
-// allowed but no credentials". The browser would refuse to send cookies anyway.
+// Treat `*` as "any origin allowed but no credentials" — browsers already
+// refuse to send cookies in that combination.
 const credentialsAllowed = !hasWildcardOrigin;
 
 if (!isPushConfigured()) {
@@ -98,23 +93,21 @@ app.use((request, response, next) => {
   }
   next();
 });
-// Body parsers with conservative size limits. URL-encoded bodies are not
-// expected from the SPA but we still configure an explicit cap so a malformed
-// or abusive request cannot exceed it. The JSON cap is generous enough for
-// GPS/waypoint batches without enabling trivial denial-of-service vectors.
+// Conservative size caps: the JSON limit is generous enough for GPS/waypoint
+// batches without enabling trivial denial-of-service vectors; URL-encoded
+// bodies are not expected from the SPA but we still cap them explicitly.
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false, limit: '100kb' }));
 app.use(cookieParser());
 
-// Issue a CSRF cookie on every request so that authenticated state-changing
+// Issue a CSRF cookie on every request so authenticated state-changing
 // requests from the SPA can echo it back via the X-CSRF-Token header.
 app.use(ensureCsrfCookie);
 
-// CSRF protection for cookie-authenticated state-changing requests. Safe
-// methods (GET/HEAD/OPTIONS) are skipped by the middleware itself. The
-// pre-authentication `POST /api/auth/register`, `POST /api/auth/login` and
-// `POST /api/auth/refresh` endpoints cannot have a CSRF cookie/header pair
-// yet (they establish the session) so they are explicitly excluded.
+// Pre-authentication `POST /api/auth/register`, `POST /api/auth/login` and
+// `POST /api/auth/refresh` cannot have a CSRF cookie/header pair yet
+// (they establish the session) so they are explicitly excluded. Safe
+// methods (GET/HEAD/OPTIONS) are skipped by the middleware itself.
 app.use(
   csrfProtection({
     skip: [/^\/api\/auth\/(register|login|refresh)/],

@@ -119,7 +119,7 @@ export async function enablePushNotifications() {
   }
 
   // The backend derives the owning user from the authenticated session,
-  // so we do NOT send a userId here.
+  // so no userId is sent.
   await pushSubscriptionsApi.create({
     provider: 'WEB_PUSH',
     endpoint: subJson.endpoint,
@@ -140,9 +140,9 @@ export async function disablePushNotifications() {
     registration = null;
   }
 
-  // Capture the endpoint before browser unsubscription. Subscriptions are
-  // deliberately endpoint-scoped: falling back to an arbitrary server record
-  // can disable a different device owned by the same user.
+  // Capture the endpoint before unsubscribing. Subscriptions are
+  // deliberately endpoint-scoped: falling back to an arbitrary server
+  // record could disable a different device owned by the same user.
   const subscription = registration ? await registration.pushManager.getSubscription() : null;
   const endpoint = subscription?.endpoint;
   if (subscription) await subscription.unsubscribe();

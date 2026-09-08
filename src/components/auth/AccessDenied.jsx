@@ -12,9 +12,8 @@ export function AccessDenied({ requestedPath }) {
   const { user } = useAuth();
   const role = user?.role ?? null;
   const home = getDefaultRouteForRole(role);
-  // If the user has an unknown role we still give them a button — the
-  // `/` page will at least let them see something. They will not see
-  // privileged data because the backend enforces authorization.
+  // Unknown roles still get a button to `/`; they won't see privileged
+  // data because the backend enforces authorization.
   const safeHome = role && role === ROLE.DRIVER ? home : '/';
   return (
     <div className="access-denied">

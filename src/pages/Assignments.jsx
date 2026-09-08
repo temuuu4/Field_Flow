@@ -188,34 +188,40 @@ export default function Assignments({ u }) {
 
   return (
     <Page title="Assignments" u={u}>
-      <SectionCard title="Operational assignments">
-        <Notice error={q.error} message={message} />
-        <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', marginBottom: 'var(--space-4)', alignItems: 'flex-end' }}>
-          <div style={{ flex: '0 1 260px', minWidth: 180, maxWidth: 300 }}>
-            <FormField label="Search">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assignments..." />
-            </FormField>
-          </div>
-          <div style={{ flex: '0 0 auto' }}>
-            <FormField label="Status">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All</option>
-                <option value="ASSIGNED">Assigned</option>
-                <option value="DECLINED">Declined</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="COMPLETED">Completed</option>
-                <option value="CANCELLED">Cancelled</option>
-              </select>
-            </FormField>
-          </div>
+      <SectionCard
+        title="Operational assignments"
+        actions={
           <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
-            Create Assignment
+            Create assignment
           </Button>
-          {(search || statusFilter) && (
-            <Button variant="secondary" size="sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>
-              Clear filters
-            </Button>
-          )}
+        }
+      >
+        <Notice error={q.error} message={message} />
+        <div className="page-toolbar">
+          <div className="page-toolbar-filters">
+            <div style={{ flex: '0 1 260px', minWidth: 180, maxWidth: 300 }}>
+              <FormField label="Search">
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search assignments..." />
+              </FormField>
+            </div>
+            <div style={{ flex: '0 0 auto' }}>
+              <FormField label="Status">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="">All</option>
+                  <option value="ASSIGNED">Assigned</option>
+                  <option value="DECLINED">Declined</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
+              </FormField>
+            </div>
+            {(search || statusFilter) && (
+              <Button variant="secondary" size="sm" onClick={() => { setSearch(''); setStatusFilter(''); }}>
+                Clear filters
+              </Button>
+            )}
+          </div>
         </div>
         {!q.loading && (
           <p style={{ margin: '0 0 var(--space-3)', fontSize: 'var(--text-sm)', color: 'var(--muted)' }}>
@@ -299,10 +305,10 @@ export default function Assignments({ u }) {
               </button>
             </div>
             <div className="modal-body">
-              <form className="form-grid compact-assignment-form" onSubmit={submit}>
+              <form className="modal-form-grid" onSubmit={submit}>
                 {formError && (
-                  <div className="auth-form-error" style={{ gridColumn: '1 / -1' }} role="alert">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <div className="modal-error-banner modal-full-row" role="alert">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="10" />
                       <line x1="12" y1="8" x2="12" y2="12" />
                       <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -311,7 +317,7 @@ export default function Assignments({ u }) {
                   </div>
                 )}
 
-                <div style={{ gridColumn: '1 / -1' }}>
+                <div className="modal-full-row">
                   <FormField label="Purpose" error={fieldErrors.title}>
                     <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Daily hospital collection" />
                   </FormField>
@@ -418,7 +424,7 @@ export default function Assignments({ u }) {
                 </div>
 
                 {!requiresCollectionLocation && (
-                  <div style={{ gridColumn: '1 / -1' }}>
+                  <div className="modal-full-row">
                     {r.loading ? (
                       <div className="loading-overlay compact-loading-inline">
                         <div className="spinner" />
@@ -439,7 +445,7 @@ export default function Assignments({ u }) {
                   </div>
                 )}
 
-                <div className="modal-footer" style={{ gridColumn: '1 / -1' }}>
+                <div className="modal-footer modal-full-row">
                   <Button variant="secondary" type="button" onClick={() => setShowCreateModal(false)}>
                     Cancel
                   </Button>

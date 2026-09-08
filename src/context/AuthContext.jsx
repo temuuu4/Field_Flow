@@ -50,9 +50,6 @@ export function AuthProvider({ children }) {
         if (!cancelled) applyUser(current);
       } catch (error) {
         if (!cancelled) applyUser(null);
-        // Bootstrap is allowed to fail with 401 — that just means there
-        // is no session yet. Any other network-level error is also fine:
-        // the UI will offer the login screen and the user can retry.
       } finally {
         if (!cancelled) setLoading(false);
       }

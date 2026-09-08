@@ -3,6 +3,10 @@
 // deployment without rewriting the Driver workflow code.
 const defaultProvider = import.meta.env.VITE_ROUTING_PROVIDER || 'osrm';
 const defaultBaseUrl = import.meta.env.VITE_OSRM_URL || 'https://router.project-osrm.org';
+
+// Only successful routes are cached. Failed / invalid results are never
+// stored so that a temporary GPS or network failure does not permanently
+// block recalculation once the device recovers.
 const cache = new Map();
 
 const normalizePoint = (point) => {
@@ -74,23 +78,18 @@ export async function getRoadRoute(coordinates) {
   try {
     const res = await fetch(url, { signal: controller?.signal, headers: { Accept: 'application/json' } });
     if (!res.ok) {
-      const failed = { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
-      cache.set(key, failed);
-      return failed;
+      // Do NOT cache failures — let the next GPS update retry.
+      return { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
     }
 
     const data = await res.json();
     if (data.code !== 'Ok' || !Array.isArray(data.routes) || !data.routes.length) {
-      const failed = { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
-      cache.set(key, failed);
-      return failed;
+      return { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
     }
 
     const geometry = data.routes[0].geometry;
     if (geometry?.type !== 'LineString' || !Array.isArray(geometry.coordinates)) {
-      const failed = { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
-      cache.set(key, failed);
-      return failed;
+      return { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
     }
 
     const path = toLeafletPath(geometry.coordinates);
@@ -101,12 +100,12 @@ export async function getRoadRoute(coordinates) {
       provider: routingConfig.provider,
       status: 'ok',
     };
+    // Only cache successful results so transient failures are retried.
     cache.set(key, result);
     return result;
   } catch {
-    const failed = { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
-    cache.set(key, failed);
-    return failed;
+    // Network error / timeout / abort — do NOT cache, will retry on next GPS tick.
+    return { path: [], distanceMeters: null, durationSeconds: null, provider: routingConfig.provider, status: 'failed' };
   } finally {
     if (timer) clearTimeout(timer);
   }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { NavLink } from 'react-router-dom';
 
 export const labels = { DRIVER: 'Driver', OPERATOR: 'Operations Admin', IT_ADMIN: 'IT Administrator' };
 export const colors = ['#ed8354', '#665bd7', '#2da779', '#d69a3d', '#4384c8'];
@@ -51,7 +52,14 @@ export const Page = ({ title, u, children }) => (
         <small>FIELD OPERATIONS</small>
         <h1>{title}</h1>
       </div>
-      <Avatar u={u} />
+      <NavLink
+        to="/account"
+        className="header-avatar-link"
+        aria-label={`Account: ${u?.name || 'Account'}`}
+        title={u?.name ? `${u.name} — View account` : 'View account'}
+      >
+        <Avatar u={u} />
+      </NavLink>
     </header>
     <article>{children}</article>
   </>

@@ -3,6 +3,7 @@ import { routesApi, collectionLocationsApi } from '../api/fieldflow';
 import { useLoad, Page, Notice, uid, fail } from './utils';
 import { Button, SectionCard, FormField } from '../components/ui';
 import { RouteEdit } from '../components/EditControls';
+import CreateRouteModal from '../components/CreateRouteModal';
 import { useToast } from '../components/Toast';
 
 export default function RoutesPage({ u }) {
@@ -18,6 +19,7 @@ export default function RoutesPage({ u }) {
   const [dragIndex, setDragIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const dragNode = useRef(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const [createName, setCreateName] = useState('');
   const [createRouteError, setCreateRouteError] = useState('');
@@ -292,7 +294,14 @@ export default function RoutesPage({ u }) {
 
   return (
     <Page title="Routes" u={u}>
-      <SectionCard title="Reusable routes">
+      <SectionCard
+        title="Reusable routes"
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+            Create route
+          </Button>
+        }
+      >
         <Notice error={error || q.error} />
         {q.loading ? (
           <div className="loading-overlay">
@@ -567,6 +576,18 @@ export default function RoutesPage({ u }) {
           </div>
         </form>
       </SectionCard>
+
+      {showCreateModal && (
+        <CreateRouteModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={async () => {
+            await q.load();
+            toast('Route created successfully.');
+          }}
+          locations={cl.data || []}
+          createdBy={u.id}
+        />
+      )}
     </Page>
   );
 }

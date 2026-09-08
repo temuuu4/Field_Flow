@@ -1,22 +1,19 @@
 import { useEffect, useState } from 'react';
-import { schedulesApi, collectionLocationsApi } from '../api/fieldflow';
+import { schedulesApi, collectionLocationsApi, routesApi } from '../api/fieldflow';
 import { getUsers } from '../api/users';
 import { useLoad, Page, Notice, uid, fail, present } from './utils';
-import { Button, SectionCard, FormField } from '../components/ui';
+import { Button, SectionCard } from '../components/ui';
+import CreateScheduleModal from '../components/CreateScheduleModal';
 import { useToast } from '../components/Toast';
-
-const todayIso = new Date().toISOString().slice(0, 10);
 
 export default function Schedules({ u }) {
   const toast = useToast();
   const q = useLoad(() => schedulesApi.list());
   const cl = useLoad(() => collectionLocationsApi.list({ active: true }));
+  const r = useLoad(() => routesApi.list({ status: 'ACTIVE' }));
   const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
-  // Drivers list is loaded lazily. With real auth, operators/admins hit
-  // `/api/users?role=DRIVER` (admins/operators only). The page remains
-  // usable without it if the backend refuses the listing.
+  const [actionLoading, setActionLoading] = useState({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [drivers, setDrivers] = useState([]);
 
   useEffect(() => {
@@ -31,90 +28,17 @@ export default function Schedules({ u }) {
     })();
     return () => { live = false; };
   }, []);
-  const [actionLoading, setActionLoading] = useState({});
-
-  const [form, setForm] = useState({
-    name: '',
-    driverId: '',
-    assignmentType: 'SPECIFIC_LOCATION',
-    sampleType: '',
-    frequency: 'DAILY',
-    timeOfDay: '',
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    startDate: '',
-    collectionLocationId: '',
-  });
-
-  const activeHospitals = cl.data || [];
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setSubmitting(true);
-    try {
-      if (!form.name.trim()) {
-        setFormError('Name is required.');
-        return;
-      }
-      if (!form.collectionLocationId) {
-        setFormError('Select a collection location.');
-        return;
-      }
-      if (!form.startDate) {
-        setFormError('Select a start date.');
-        return;
-      }
-      if (!form.timeOfDay) {
-        setFormError('Select a time of day.');
-        return;
-      }
-
-      const selectedLocation = activeHospitals.find((loc) => uid(loc) === form.collectionLocationId);
-      const coords = selectedLocation?.location?.coordinates;
-      const targetLocation = coords
-        ? { latitude: coords[1], longitude: coords[0] }
-        : undefined;
-
-      const body = {
-        name: form.name.trim(),
-        createdBy: u.id,
-        driverId: form.driverId || undefined,
-        assignmentType: form.assignmentType,
-        sampleType: form.sampleType || undefined,
-        frequency: form.frequency,
-        timeOfDay: form.timeOfDay,
-        timezone: form.timezone,
-        startDate: new Date(form.startDate).toISOString(),
-        daysOfWeek: [],
-        targetLocation,
-      };
-
-      await schedulesApi.create(body);
-      setForm({
-        name: '',
-        driverId: '',
-        assignmentType: 'SPECIFIC_LOCATION',
-        sampleType: '',
-        frequency: 'DAILY',
-        timeOfDay: '',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        startDate: '',
-        collectionLocationId: '',
-      });
-      q.load();
-      toast('Recurring schedule created successfully.');
-    } catch (x) {
-      const msg = fail(x);
-      setFormError(msg);
-      setError(msg);
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   return (
     <Page title="Recurring schedules" u={u}>
-      <SectionCard title="Schedules">
+      <SectionCard
+        title="Schedules"
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+            Create schedule
+          </Button>
+        }
+      >
         <Notice error={error || q.error} />
         {q.loading ? (
           <div className="loading-overlay">
@@ -127,14 +51,48 @@ export default function Schedules({ u }) {
               <div className="driver-list-item" key={uid(s)}>
                 <div className="list-main">
                   <b>{s.name}</b>
-                  <small>{s.frequency} · {s.status} · next {new Date(s.nextOccurrenceAt).toLocaleString()}</small>
+                  <small>
+                    {s.frequency} · {s.status} · next {new Date(s.nextOccurrenceAt).toLocaleString()}
+                  </small>
                 </div>
                 <div className="list-actions">
-                  <Button variant="secondary" size="sm" loading={actionLoading[uid(s)]} onClick={async () => { setActionLoading((prev) => ({ ...prev, [uid(s)]: true })); try { await schedulesApi.generate(uid(s)); q.load(); toast('Schedule generated.'); } catch (e) { setError(fail(e)); } finally { setActionLoading((prev) => ({ ...prev, [uid(s)]: false })); } }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={actionLoading[uid(s)]}
+                    onClick={async () => {
+                      setActionLoading((prev) => ({ ...prev, [uid(s)]: true }));
+                      try {
+                        await schedulesApi.generate(uid(s));
+                        q.load();
+                        toast('Schedule generated.');
+                      } catch (e) {
+                        setError(fail(e));
+                      } finally {
+                        setActionLoading((prev) => ({ ...prev, [uid(s)]: false }));
+                      }
+                    }}
+                  >
                     Generate
                   </Button>
                   {s.status === 'ACTIVE' && (
-                    <Button variant="danger" size="sm" loading={actionLoading[uid(s)]} onClick={async () => { setActionLoading((prev) => ({ ...prev, [uid(s)]: true })); try { await schedulesApi.end(uid(s), { actorId: u.id }); q.load(); toast('Schedule ended.'); } catch (e) { setError(fail(e)); } finally { setActionLoading((prev) => ({ ...prev, [uid(s)]: false })); } }}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      loading={actionLoading[uid(s)]}
+                      onClick={async () => {
+                        setActionLoading((prev) => ({ ...prev, [uid(s)]: true }));
+                        try {
+                          await schedulesApi.end(uid(s), { actorId: u.id });
+                          q.load();
+                          toast('Schedule ended.');
+                        } catch (e) {
+                          setError(fail(e));
+                        } finally {
+                          setActionLoading((prev) => ({ ...prev, [uid(s)]: false }));
+                        }
+                      }}
+                    >
                       End
                     </Button>
                   )}
@@ -151,69 +109,19 @@ export default function Schedules({ u }) {
         )}
       </SectionCard>
 
-      <SectionCard title="Create recurring schedule">
-        <Notice error={formError} />
-        {formError && (
-          <div style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-3)', background: 'var(--danger-light)', border: '1px solid var(--danger)', borderRadius: 'var(--radius-md)', color: 'var(--danger)', fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <span>⚠</span>
-            <span>{formError}</span>
-          </div>
-        )}
-        <form className="form-grid" onSubmit={submit}>
-          <FormField label="Name">
-            <input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Morning collection route" />
-          </FormField>
-
-          <FormField label="Driver">
-            <select value={form.driverId} onChange={(e) => setForm({ ...form, driverId: e.target.value })}>
-              <option value="">Optional</option>
-              {drivers.map((x) => (
-                <option key={x.id} value={x.id}>{x.name}</option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Frequency">
-            <select value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })}>
-              <option>DAILY</option>
-              <option>WEEKLY</option>
-              <option>MONTHLY</option>
-            </select>
-          </FormField>
-
-          <FormField label="Time of day">
-            <input type="time" value={form.timeOfDay} onChange={(e) => setForm({ ...form, timeOfDay: e.target.value })} />
-          </FormField>
-
-          <FormField label="Start date">
-            <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} min={todayIso} />
-          </FormField>
-
-          <FormField label="Collection location">
-            <select
-              value={form.collectionLocationId}
-              onChange={(e) => setForm({ ...form, collectionLocationId: e.target.value })}
-            >
-              <option value="">Select a collection location</option>
-              {activeHospitals.map((x) => (
-                <option key={uid(x)} value={uid(x)}>
-                  {x.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Sample type">
-            <input value={form.sampleType} onChange={(e) => setForm({ ...form, sampleType: e.target.value })} placeholder="Optional" />
-          </FormField>
-
-          <div className="form-actions">
-            <Button variant="primary" type="submit" loading={submitting}>
-              {submitting ? 'Creating...' : 'Create schedule'}
-            </Button>
-          </div>
-        </form>
-      </SectionCard>
+      {showCreateModal && (
+        <CreateScheduleModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            q.load();
+            toast('Recurring schedule created successfully.');
+          }}
+          locations={cl.data || []}
+          routes={r.data || []}
+          drivers={drivers}
+          createdBy={u.id}
+        />
+      )}
     </Page>
   );
 }

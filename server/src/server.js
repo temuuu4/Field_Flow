@@ -25,9 +25,8 @@ const shutdown = async (signal) => {
 // handlers also ensure the error reaches the server log instead of silently
 // terminating the process.
 process.on('unhandledRejection', (reason) => {
-  // Avoid serializing an Error object directly into logs in production since
-  // an attacker-controlled payload could otherwise influence downstream log
-  // parsers — use its message and stack separately.
+  // Serialize the message/stack separately so an attacker-controlled payload
+  // cannot influence downstream log parsers.
   const message = reason instanceof Error ? reason.message : String(reason);
   const stack = reason instanceof Error ? reason.stack : undefined;
   console.error(`[unhandledRejection] ${message}`);
@@ -37,8 +36,6 @@ process.on('unhandledRejection', (reason) => {
 process.on('uncaughtException', (error) => {
   console.error(`[uncaughtException] ${error.message}`);
   if (process.env.NODE_ENV !== 'production') console.error(error.stack);
-  // uncaughtException usually indicates a bug; trigger graceful shutdown so
-  // the orchestrator restarts us cleanly.
   shutdown('uncaughtException').finally(() => {
     process.exit(1);
   });

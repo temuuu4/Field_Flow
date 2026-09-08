@@ -1185,79 +1185,45 @@ table tbody tr {
   font-weight: 500;
 }
 
-/* Toast */
+/* ============================================================================
+   Toast / feedback system
+   — fixed top-right, consistent across all pages, all screen sizes
+   ============================================================================ */
+
+/* Container: stacks toasts vertically downward from the top-right corner.
+   Sits above modals (z-index 400) so success messages are never hidden. */
 .toast-container {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  top: var(--space-5);    /* 20 px from the top */
+  right: var(--space-5);  /* 20 px from the right */
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
-  pointer-events: none;
+  gap: var(--space-2);
+  width: clamp(280px, 90vw, 380px);
+  pointer-events: none;   /* let clicks pass through the gap between toasts */
 }
 
-.toast-container .toast {
+/* ---- Single toast item ---- */
+.toast-item {
   pointer-events: auto;
-}
-
-.toast {
-  position: static;
-  background: var(--sidebar-bg);
-  color: #fff;
-  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  cursor: pointer;
-  max-width: 380px;
-  width: 100%;
-  animation: slideIn 0.3s ease;
-  border-left: 4px solid var(--primary);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Left accent bar — colour set per-type below */
+  border-left-width: 4px;
+  border-left-style: solid;
 }
 
-@media (max-width: 480px) {
-  .toast-container {
-    bottom: 12px;
-    right: 12px;
-    left: 12px;
-  }
-  .toast {
-    max-width: 100%;
-  }
-}
-
-.toast.toast-success {
-  border-left-color: var(--success);
-}
-
-.toast.toast-error {
-  border-left-color: var(--danger);
-}
-
-/* Actionable toasts (e.g. driver got a new assignment) look clickable and
-   gain an accent border so drivers know tapping will deep-link them to
-   the response surface. */
-.toast.toast-actionable {
-  cursor: pointer;
-  border-left-color: var(--primary);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(102, 91, 215, 0.4);
-}
-
-.toast.toast-actionable:hover,
-.toast.toast-actionable:focus-visible {
-  transform: translateY(-1px);
-  outline: none;
-}
-
-.toast-message {
-  font-size: var(--text-sm);
-  font-weight: 600;
-  line-height: 1.4;
-}
-
-@keyframes slideIn {
+@keyframes toastSlideIn {
   from {
-    transform: translateX(100%);
+    transform: translateX(calc(100% + var(--space-5)));
     opacity: 0;
   }
   to {
@@ -1266,16 +1232,131 @@ table tbody tr {
   }
 }
 
-.toast b {
-  display: block;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  margin-bottom: var(--space-1);
+/* ---- Type colour accents ---- */
+.toast-item--success {
+  border-left-color: var(--success);
 }
 
-.toast small {
-  color: #9c9ead;
+.toast-item--error {
+  border-left-color: var(--danger);
+}
+
+.toast-item--info {
+  border-left-color: var(--info);
+}
+
+.toast-item--actionable {
+  border-left-color: var(--primary);
+  cursor: pointer;
+}
+
+/* ---- Toast body (icon + text, optional click target) ---- */
+.toast-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-body--clickable {
+  cursor: pointer;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.toast-body--clickable:hover {
+  background: var(--background);
+}
+
+/* ---- Icon ---- */
+.toast-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 1px; /* optical alignment with first line of text */
+}
+
+.toast-item--success .toast-icon {
+  color: var(--success);
+}
+
+.toast-item--error .toast-icon {
+  color: var(--danger);
+}
+
+.toast-item--info .toast-icon {
+  color: var(--info);
+}
+
+.toast-item--actionable .toast-icon {
+  color: var(--primary);
+}
+
+/* ---- Text ---- */
+.toast-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.toast-message {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.toast-sub {
   font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+/* ---- Dismiss button ---- */
+.toast-dismiss {
+  flex-shrink: 0;
+  width: 36px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.toast-dismiss:hover,
+.toast-dismiss:focus-visible {
+  background: var(--background);
+  color: var(--ink);
+  outline: none;
+}
+
+.toast-dismiss:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.toast-dismiss svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---- Mobile: full-width strip at the top ---- */
+@media (max-width: 480px) {
+  .toast-container {
+    top: var(--space-3);
+    right: var(--space-3);
+    left: var(--space-3);
+    width: auto;
+  }
 }
 
 /* Modal */
@@ -3406,5 +3487,848 @@ html {
   }
   .account-submit-row .btn {
     width: 100%;
+  }
+}
+
+/* ============================================================================
+   Admin Create Modals — shared modal pattern
+   ============================================================================
+
+   All four creation modals (Assignment, Route, Schedule, User) use this
+   common layout. The assignment modal has been updated to use these classes
+   for visual consistency.
+
+   Design pillars:
+   • 640px wide on desktop
+   • Two-column form grid that collapses to one column below 520px
+   • Error banner at the top (replaces auth-form-error inside modals)
+   • Footer with Cancel / Create buttons flush-right
+   ============================================================================ */
+
+/* ---- Modal width override ---- */
+.admin-modal {
+  max-width: 640px;
+  width: min(100%, 640px);
+}
+
+/* ---- Error banner inside a modal ---- */
+.modal-error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(191, 85, 87, 0.08);
+  color: var(--danger);
+  border: 1px solid rgba(191, 85, 87, 0.28);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  margin-bottom: var(--space-4);
+}
+
+.modal-error-banner svg {
+  flex-shrink: 0;
+}
+
+/* ---- Two-column compact form grid for modals ---- */
+.modal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Helper: span both columns */
+.modal-full-row {
+  grid-column: 1 / -1;
+}
+
+/* ---- Page toolbar — filter bar that sits below the card title ---- */
+/*
+   Usage:
+     <div className="page-toolbar">
+       <div className="page-toolbar-filters"> … filters … </div>
+     </div>
+
+   The card header already positions the Create button top-right via
+   SectionCard's `actions` prop. The toolbar sits inside card-body, before
+   the list content.
+*/
+.page-toolbar {
+  margin-bottom: var(--space-4);
+}
+
+.page-toolbar-filters {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.page-toolbar-filters .field {
+  flex: 0 1 200px;
+  min-width: 140px;
+}
+
+/* ---- Destination sub-form inside CreateRouteModal ---- */
+.modal-subsection-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+}
+
+.modal-subsection-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.modal-subsection-count {
+  font-size: var(--text-xs);
+  color: var(--muted);
+}
+
+.modal-dest-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.modal-dest-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.modal-dest-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-dest-info b {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.modal-dest-info small {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.modal-dest-remove {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-full);
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.modal-dest-remove:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-light);
+}
+
+/* Sub-form for adding destinations inside the route modal */
+.modal-subform {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-4);
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+
+.modal-subform > *:last-child {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Progress indicator */
+.modal-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--info-light);
+  border: 1px solid var(--info);
+  border-radius: var(--radius-md);
+  color: var(--info);
+  font-size: var(--text-sm);
+}
+
+/* ---- Day-of-week picker (weekly schedules) ---- */
+.day-picker {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-1);
+}
+
+.day-btn {
+  min-width: 44px;
+  height: 36px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.day-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.day-btn-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.day-btn-active:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  color: #fff;
+}
+
+/* ============================================================================
+   Responsive breakpoints for admin modals
+   ============================================================================ */
+
+/* Collapse modal form grid to single column on narrow screens */
+@media (max-width: 520px) {
+  .modal-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-subform {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-subform > *:last-child {
+    grid-column: 1;
+  }
+}
+
+/* Page toolbar wraps nicely on mobile */
+@media (max-width: 600px) {
+  .page-toolbar-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-toolbar-filters .field {
+    flex: none;
+    min-width: 0;
+  }
+
+  .day-picker {
+    gap: var(--space-1);
+  }
+
+  .day-btn {
+    min-width: 38px;
+  }
+}
+
+/* ============================================================================
+   Driver Navigation — MyWork page + DriverNavigationMap
+   ============================================================================ */
+
+/* ── Status bar (journey / network / GPS) ───────────────────────────────── */
+.driver-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+}
+
+.driver-status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 120px;
+}
+
+.driver-status-label {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.driver-status-value {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.driver-status-gps {
+  font-size: var(--text-xs);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.driver-gps-live {
+  color: var(--success);
+  font-size: var(--text-xs);
+}
+
+.driver-gps-reconnecting {
+  color: var(--warning);
+  font-size: var(--text-xs);
+}
+
+.driver-net-online {
+  color: var(--success);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.driver-net-offline {
+  color: var(--danger);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+/* ── Navigation card (DriverNavigationMap) ───────────────────────────────── */
+.dnav-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-card);
+}
+
+.dnav-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--background);
+}
+
+.dnav-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dnav-stop-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+}
+
+.dnav-destination {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dnav-header-right {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.dnav-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.dnav-badge--live {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.dnav-badge--offline {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.dnav-route-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-sm);
+  background: var(--surface);
+}
+
+.dnav-route-status {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.dnav-route-warning {
+  color: var(--warning);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+
+/* Map container: taller on desktop, more compact on mobile */
+.dnav-map-wrap {
+  position: relative;
+  height: clamp(260px, 42vh, 400px);
+}
+
+.dnav-leaflet-map {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+/* GPS status overlay inside the map — bottom-left */
+.dnav-gps-overlay {
+  position: absolute;
+  bottom: var(--space-3);
+  left: var(--space-3);
+  z-index: 500; /* above Leaflet panes */
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  pointer-events: none;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Active stop card ───────────────────────────────────────────────────── */
+.driver-stop-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.driver-stop-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+.driver-stop-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+
+.driver-stop-name {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.driver-stop-address {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Phase badge (Navigating / Arrived / etc.) */
+.driver-phase-badge {
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.driver-phase-badge[data-phase="arrived"] {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.driver-stop-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+
+.driver-route-warning {
+  color: var(--warning);
+  font-size: var(--text-xs);
+}
+
+/* ── Phase action zones ─────────────────────────────────────────────────── */
+.driver-action-zone {
+  background: var(--background);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.driver-action-zone--final {
+  border-color: var(--success);
+  background: var(--success-light);
+}
+
+.driver-action-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+  line-height: 1.5;
+}
+
+.driver-action-row {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Barcode manual entry */
+.driver-barcode-manual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.driver-barcode-label {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  color: var(--ink-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.driver-barcode-input {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-family: monospace;
+  min-height: 44px;
+  transition: border-color var(--transition-fast);
+}
+
+.driver-barcode-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 76, 179, 0.1);
+}
+
+/* ── Stop progress list ─────────────────────────────────────────────────── */
+.driver-stops-list {
+  margin-top: var(--space-5);
+  border-top: 1px solid var(--line);
+  padding-top: var(--space-4);
+}
+
+.driver-stops-list-title {
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0 0 var(--space-3);
+}
+
+.driver-stop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.driver-stop-row--active {
+  background: var(--primary-light);
+  border: 1px solid var(--primary);
+}
+
+.driver-stop-row-name {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Mobile adjustments ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .driver-status-bar {
+    gap: var(--space-3);
+  }
+
+  .driver-status-item {
+    flex: 1 1 80px;
+  }
+
+  .dnav-map-wrap {
+    height: clamp(220px, 40vw, 320px);
+  }
+
+  .driver-stop-header {
+    flex-direction: column;
+  }
+
+  .driver-phase-badge {
+    align-self: flex-start;
+  }
+}
+
+/* ============================================================================
+   Account page — profile header, edit form, avatar link
+   ============================================================================ */
+
+/* ── Header avatar — clickable link to /account ─────────────────────────── */
+.header-avatar-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  outline: none;
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.header-avatar-link:hover {
+  box-shadow: 0 0 0 3px var(--primary-light);
+  transform: scale(1.06);
+}
+
+.header-avatar-link:focus-visible {
+  box-shadow: 0 0 0 3px var(--primary);
+}
+
+/* ── Profile header card ────────────────────────────────────────────────── */
+.acct-profile-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-6) var(--space-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-6);
+}
+
+.acct-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.acct-profile-name {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acct-profile-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.acct-profile-email {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* ── Edit profile form (IT_ADMIN) ───────────────────────────────────────── */
+.account-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.account-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.account-edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.account-edit-field label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+
+.account-edit-field input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--text-sm);
+  min-height: 42px;
+  width: 100%;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.account-edit-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 76, 179, 0.1);
+}
+
+.account-edit-field input:disabled {
+  background: var(--background);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Informational hint below the edit form */
+.account-edit-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--info-light);
+  border: 1px solid rgba(67, 132, 200, 0.25);
+  border-radius: var(--radius-md);
+  color: var(--info);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.account-edit-hint svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .acct-profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .acct-profile-name {
+    font-size: var(--text-xl);
+    white-space: normal;
+  }
+
+  .account-edit-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-info-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+
+  .account-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .account-info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
   }
 }

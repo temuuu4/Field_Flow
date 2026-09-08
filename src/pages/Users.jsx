@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { createUser, deactivateUser, getUsers, updateUser } from '../api/users';
-import { useLoad, Page, Notice, Avatar, uid, normalizeUserId, uname, present, when, fail, labels } from './utils';
+import { useLoad, Page, Notice, Avatar, uid, uname, present, when, fail, labels } from './utils';
 import { Button, SectionCard, FormField } from '../components/ui';
+import CreateUserModal from '../components/CreateUserModal';
 import { useToast } from '../components/Toast';
 
 export default function Users({ u, refresh }) {
@@ -14,6 +15,7 @@ export default function Users({ u, refresh }) {
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
   // Legacy Phase-6 prop: when the dev-user selector existed, the page
   // would refresh its parent so the selector updated. With real auth we
   // don't need that; calling `refresh?.()` keeps the prop tolerated for
@@ -27,13 +29,13 @@ export default function Users({ u, refresh }) {
       if (!form.firstName || !form.lastName || !form.email) {
         throw Error('First name, last name, and email are required.');
       }
-      edit ? await updateUser(edit, form) : await createUser(form);
+      await updateUser(edit, form);
       setForm(blank);
       setEdit(null);
       setMessage('User saved.');
       q.load();
       safeRefresh();
-      toast(edit ? 'User updated.' : 'User created.');
+      toast('User updated.');
     } catch (x) {
       q.setError(fail(x));
     } finally {
@@ -43,21 +45,28 @@ export default function Users({ u, refresh }) {
 
   return (
     <Page title="User management" u={u}>
-      <SectionCard title="Team access">
-        <div className="user-tools">
-          <FormField label="Role">
-            <select value={role} onChange={(e) => setRole(e.target.value)}>
-              <option value="">All roles</option>
-              {Object.keys(labels).map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <Button variant="secondary" onClick={q.load}>
-            Refresh
+      <SectionCard
+        title="Team access"
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreateModal(true)}>
+            Create user
           </Button>
+        }
+      >
+        <div className="page-toolbar">
+          <div className="page-toolbar-filters">
+            <FormField label="Filter by role">
+              <select value={role} onChange={(e) => setRole(e.target.value)}>
+                <option value="">All roles</option>
+                {Object.keys(labels).map((x) => (
+                  <option key={x} value={x}>{labels[x]}</option>
+                ))}
+              </select>
+            </FormField>
+            <Button variant="secondary" size="sm" onClick={q.load}>
+              Refresh
+            </Button>
+          </div>
         </div>
         <Notice error={q.error} message={message} />
         {q.loading ? (
@@ -122,45 +131,56 @@ export default function Users({ u, refresh }) {
           <p>No users found.</p>
         )}
       </SectionCard>
-      <SectionCard title={edit ? 'Edit user' : 'Create user'}>
-        <form className="form-grid" onSubmit={submit}>
-          {['firstName', 'lastName', 'email', 'phone'].map((k) => (
-            <FormField key={k} label={k}>
-              <input
-                type={k === 'email' ? 'email' : 'text'}
-                value={form[k] || ''}
-                onChange={(e) => setForm({ ...form, [k]: e.target.value })}
-              />
+
+      {/* Inline edit form — only shown when editing an existing user */}
+      {edit && (
+        <SectionCard title="Edit user">
+          <form className="form-grid" onSubmit={submit}>
+            {['firstName', 'lastName', 'email', 'phone'].map((k) => (
+              <FormField key={k} label={k}>
+                <input
+                  type={k === 'email' ? 'email' : 'text'}
+                  value={form[k] || ''}
+                  onChange={(e) => setForm({ ...form, [k]: e.target.value })}
+                />
+              </FormField>
+            ))}
+            <FormField label="Role">
+              <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                {Object.keys(labels).map((x) => (
+                  <option key={x} value={x}>{x}</option>
+                ))}
+              </select>
             </FormField>
-          ))}
-          <FormField label="Role">
-            <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              {Object.keys(labels).map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-          </FormField>
-          <FormField label="Status">
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="ACTIVE">ACTIVE</option>
-              <option value="INACTIVE">INACTIVE</option>
-              <option value="SUSPENDED">SUSPENDED</option>
-            </select>
-          </FormField>
-          <div className="form-actions">
-            <Button variant="primary" type="submit" loading={submitting}>
-              {submitting ? (edit ? 'Saving...' : 'Creating...') : (edit ? 'Save changes' : 'Create user')}
-            </Button>
-            {edit && (
+            <FormField label="Status">
+              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                <option value="ACTIVE">ACTIVE</option>
+                <option value="INACTIVE">INACTIVE</option>
+                <option value="SUSPENDED">SUSPENDED</option>
+              </select>
+            </FormField>
+            <div className="form-actions">
+              <Button variant="primary" type="submit" loading={submitting}>
+                {submitting ? 'Saving…' : 'Save changes'}
+              </Button>
               <Button variant="ghost" type="button" onClick={() => { setEdit(null); setForm(blank); }}>
                 Cancel
               </Button>
-            )}
-          </div>
-        </form>
-      </SectionCard>
+            </div>
+          </form>
+        </SectionCard>
+      )}
+
+      {showCreateModal && (
+        <CreateUserModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={() => {
+            q.load();
+            safeRefresh();
+            toast('User created.');
+          }}
+        />
+      )}
     </Page>
   );
 }

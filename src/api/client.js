@@ -7,7 +7,7 @@ const baseUrl = configuredBaseUrl ? configuredBaseUrl.replace(/\/$/, '') : '';
 // (proxy or production same-domain) `same-origin` is sufficient.
 const credentialsMode = baseUrl ? 'include' : 'same-origin';
 
-// Name of the CSRF cookie the backend issues via `ensureCsrfCookie`. We read
+// Name of the CSRF cookie the backend issues via `ensureCsrfCookie`. Read
 // it directly from document.cookie because the cookie is intentionally
 // httpOnly: false so JavaScript can echo it back via the X-CSRF-Token
 // header (double-submit pattern). The cookies that actually carry the
@@ -26,8 +26,8 @@ const readCsrfCookie = () => {
   return '';
 };
 
-// State-changing HTTP verbs must include the CSRF token. Safe methods do
-// not — they are exempt in `server/src/middleware/security.js`.
+// State-changing HTTP verbs must include the CSRF token. Safe methods are
+// exempt in `server/src/middleware/security.js`.
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
 export class ApiError extends Error {
@@ -69,7 +69,6 @@ const notifyUnauthorized = async (path, init) => {
 export async function request(path, { method = 'GET', body, headers, signal } = {}) {
   const url = baseUrl ? `${baseUrl}${path}` : path;
 
-  // First attempt.
   const buildInit = () => {
     const init = {
       method,
@@ -90,9 +89,9 @@ export async function request(path, { method = 'GET', body, headers, signal } = 
     const response = await fetch(url, buildInit());
     if (response.status === 401 && !path.startsWith('/api/auth/')) {
       // Allow the AuthContext to attempt a single refresh + retry before
-      // we surface the error to the caller. This guarantees the refresh
-      // endpoint itself can never recursively refresh (the path guard
-      // excludes /api/auth/*).
+      // we surface the error to the caller. The path guard excludes
+      // /api/auth/* so the refresh endpoint itself can never recursively
+      // refresh.
       const retriedInit = await notifyUnauthorized(path, buildInit());
       if (retriedInit) {
         const retryResponse = await fetch(url, retriedInit);

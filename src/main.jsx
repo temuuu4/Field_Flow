@@ -13,7 +13,7 @@ import {
   assignmentsApi, collectionLocationsApi, journeysApi, notificationsApi, pushSubscriptionsApi,
   routesApi, samplesApi, schedulesApi,
 } from './api/fieldflow';
-import { ToastProvider } from './components/Toast';
+import { ToastProvider, useToast } from './components/Toast';
 import { disablePushNotifications, enablePushNotifications, getPushState } from './services/pushNotificationService';
 import Dashboard from './pages/Dashboard';
 import Assignments from './pages/Assignments';
@@ -178,9 +178,9 @@ const OPERATIONAL_ROUTES = [
 function AuthenticatedApp() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
   const [status, setStatus] = useState(() => (typeof navigator !== 'undefined' && !navigator.onLine ? 'OFFLINE' : 'RECONNECTING'));
   const [unreadCount, setUnreadCount] = useState(0);
-  const [toast, setToast] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => (typeof window !== 'undefined' && window.innerWidth > 768));
   const audioRef = useRef(null);
 
@@ -265,9 +265,19 @@ function AuthenticatedApp() {
             newestSeenAt = newest.createdAt;
           } else if (newest.createdAt > newestSeenAt) {
             newestSeenAt = newest.createdAt;
-            setToast(newest);
             playSound();
-            setTimeout(() => setToast(null), 5000);
+            // Route server-push notifications through the shared toast system.
+            // Actionable types (new assignment for a driver) get an onClick that
+            // deep-links to the work list so the driver can respond immediately.
+            const isActionable = assignmentActionTypes.has(newest.type);
+            const isDriver = user?.role === ROLE.DRIVER;
+            toast({
+              message: newest.message,
+              sub: (isActionable && isDriver) ? 'Tap to review' : undefined,
+              type: isActionable ? 'actionable' : 'info',
+              timeout: 8000,
+              onClick: (isActionable && isDriver) ? () => navigate('/work/list') : undefined,
+            });
           }
         }
       } catch (e) { /* ignore polling errors */ }
@@ -275,7 +285,7 @@ function AuthenticatedApp() {
     poll();
     const interval = setInterval(poll, 8000);
     return () => { live = false; clearInterval(interval); };
-  }, [user, playSound]);
+  }, [user, playSound, toast, navigate]);
 
   // Project the AuthContext user into the `{name, roleLabel, initials, color}`
   // shape that the existing `Avatar` / sidebar expect. The `present()`
@@ -294,52 +304,20 @@ function AuthenticatedApp() {
   );
 
   return (
-    <>
-      <Routes>
-         {OPERATIONAL_ROUTES.map(({ path, element: C, roles }) => (
-           <Route
-             key={path}
-             path={path}
-             element={
-               roles
-                 ? <RequireRole roles={roles} requestedPath={path}>{wrap(C)}</RequireRole>
-                 : wrap(C)
-             }
-           />
-         ))}
-        <Route path="*" element={<Navigate to={getDefaultRouteForRole(presentedUser.role)} replace />} />
-      </Routes>
-      {toast && (
-        <div
-          className={`toast ${assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER ? 'toast-actionable' : ''}`}
-          role={assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER ? 'button' : 'status'}
-          tabIndex={assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER ? 0 : -1}
-          onClick={() => {
-            // Drivers get a deep-link to the List of Work so they can
-            // accept/decline without hunting for the new assignment.
-            if (assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER) {
-              navigate('/work/list');
-            }
-            setToast(null);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              if (assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER) {
-                navigate('/work/list');
-              }
-              setToast(null);
-            }
-          }}
-        >
-          <b>{toast.message}</b>
-          <small>
-            {toast.type}
-            {assignmentActionTypes.has(toast.type) && presentedUser?.role === ROLE.DRIVER ? ' · Tap to review' : ''}
-          </small>
-        </div>
-      )}
-    </>
+    <Routes>
+       {OPERATIONAL_ROUTES.map(({ path, element: C, roles }) => (
+         <Route
+           key={path}
+           path={path}
+           element={
+             roles
+               ? <RequireRole roles={roles} requestedPath={path}>{wrap(C)}</RequireRole>
+               : wrap(C)
+           }
+         />
+       ))}
+      <Route path="*" element={<Navigate to={getDefaultRouteForRole(presentedUser.role)} replace />} />
+    </Routes>
   );
 }
 

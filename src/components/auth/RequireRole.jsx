@@ -1,22 +1,10 @@
-// Role-gated route guard. Compose with `RequireAuth`:
-//
-//   <RequireAuth>
-//     <RequireRole roles={[ROLE.ADMIN]}>
-//       <UsersPage />
-//     </RequireRole>
-//   </RequireAuth>
-//
-// Behavior:
-//   * If the role is known but disallowed, render `<AccessDenied />`.
-//     We do NOT silently redirect, because silently redirecting a manual
-//     URL bar entry hides the fact that the route exists and is blocked.
-//   * If the role is unknown, render `<AccessDenied />` (no privilege
-//     escalation to admin).
-//   * The `roles` prop is required; passing an empty list is treated as
-//     "deny everyone".
-//
-// This guard is purely UI-level. The backend is still authoritative — a
-// direct API call without the appropriate role returns 403 regardless.
+// Role-gated route guard. Compose with `RequireAuth`. When the caller's
+// role is disallowed (or unknown), render `<AccessDenied />` rather
+// than silently redirecting: a manual URL-bar entry should still reveal
+// that the route exists and is blocked, and an empty `roles` list is
+// treated as "deny everyone" (no privilege escalation to admin). The
+// backend remains the security authority — a direct API call without
+// the appropriate role returns 403 regardless.
 
 import { useAuth } from '../../context/AuthContext';
 import { AccessDenied } from './AccessDenied';

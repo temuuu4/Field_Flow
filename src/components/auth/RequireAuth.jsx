@@ -20,10 +20,11 @@ export function RequireAuth({ children }) {
   if (!authenticated) {
     return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
-  // Defensive: if a future state ever ends up authenticated but without a
-  // recognized role (e.g. backend introduced a new role and the FE was
-  // not yet updated), redirect to `/` so the user has at least one page
-  // they can see. The backend still rejects any privileged action.
+  // If a future state ever lands the user as authenticated without a
+  // recognized role (e.g. the backend introduced a new role the FE was
+  // not yet updated for), redirect to their default route so they still
+  // have a page they can see. The backend still rejects any privileged
+  // action.
   if (user && user.role !== ROLE.ADMIN && user.role !== ROLE.OPERATOR && user.role !== ROLE.DRIVER) {
     return <Navigate to={getDefaultRouteForRole(user.role)} replace />;
   }

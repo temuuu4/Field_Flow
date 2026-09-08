@@ -29,10 +29,10 @@ export function AuthInput({
   const hintId = hint && !error ? `${fieldId}-hint` : undefined;
   const describedBy = [errorId, hintId].filter(Boolean).join(' ') || undefined;
 
-  // Prevent the browser/password-manager from auto-filling a stale saved value
-  // (e.g. `mekdes@fieldflow.demo`) on initial paint. The field starts
-  // `readOnly`; the first focus / click clears that flag so the user can type.
-  // React re-renders preserve the cleared state because we track it in state.
+  // Start `readOnly` so browser/password-manager autofill cannot pre-fill
+  // a stale saved value (e.g. `mekdes@fieldflow.demo`). The first focus
+  // / click clears the flag so the user can type; tracking it in state
+  // lets React re-renders preserve the cleared state.
   const [readOnly, setReadOnly] = useState(true);
   const onFocusRemoveReadOnly = () => setReadOnly(false);
 
@@ -45,12 +45,10 @@ export function AuthInput({
       <div className="auth-input-wrapper">
         <input
           id={fieldId}
-          // The browser's password manager heuristic keys on the
-          // combination of `name="email"` + `type="email"`. For the
-          // auth form we use a non-standard `name` so the autofill UI
-          // does not pre-populate a previous email (e.g. `mekdes@…`) on
-          // first load. Real password managers still discover the field
-          // via the per-field `autoComplete` hint we set explicitly.
+          // Non-standard `name` prefix prevents password-manager autofill
+          // from pre-populating a previous email (e.g. `mekdes@…`);
+          // `autoComplete` is set explicitly so real managers still
+          // discover the field.
           name={name ? `auth-${name}` : name}
           type={type}
           value={value ?? ''}
